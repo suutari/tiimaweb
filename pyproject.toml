@@ -5,6 +5,7 @@ description = "Tiima Web Controller"
 readme = "README.rst"
 authors = ["Tuomas Suutari <tuomas@nepnep.net>"]
 license = "MIT"
+repository = "https://github.com/suutari/tiimaweb"
 
 [tool.poetry.scripts]
 tiimaweb = 'tiimaweb.cli:main'
