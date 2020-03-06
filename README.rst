@@ -26,7 +26,9 @@ or if you use Poetry::
 Usage
 -----
 
-The library can be used from Python code like this::
+The library can be used from Python code like this:
+
+.. code:: python
 
   from datetime import date, datetime
   
