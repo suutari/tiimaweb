@@ -5,6 +5,9 @@ description = "Tiima Web Controller"
 authors = ["Tuomas Suutari <tuomas@nepnep.net>"]
 license = "MIT"
 
+[tool.poetry.scripts]
+tiimaweb = 'tiimaweb.cli:main'
+
 [tool.poetry.dependencies]
 python = "^3.6"
 mechanicalsoup = "^0.12.0"
