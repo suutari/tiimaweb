@@ -4,6 +4,12 @@ TiimaWeb - Tiima Web Controller
 This library can be used to control the Tiima web UI through a simple
 Python API.  It uses MechanicalSoup for mimicing browser actions.
 
+|PyPI|
+
+.. |PyPI| image::
+   https://img.shields.io/pypi/v/tiimaweb.svg
+   :target: https://pypi.org/project/tiimaweb/
+
 
 Installing
 ----------
