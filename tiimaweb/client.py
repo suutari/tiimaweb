@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from copy import copy
-from datetime import date, datetime, time, timedelta, timezone
+from datetime import date, datetime, time, timedelta
 from types import TracebackType
 from typing import Dict, List, Optional, Type
 
@@ -14,7 +14,7 @@ from mechanicalsoup.utils import LinkNotFoundError
 from .exceptions import Error, LoginFailed, ParseError, UnexpectedResponse
 from .types import HtmlResponse, TimeBlock
 
-EPOCH = datetime(1970, 1, 1, 0, 0, tzinfo=timezone.utc)
+EPOCH = datetime(1970, 1, 1, 0, 0, tzinfo=pytz.UTC)
 
 
 class Client:
@@ -382,8 +382,8 @@ def _parse_time_block_item(
     (text, code) = reason.rstrip(')').split('(')
 
     times = data.pop('time_range').split('-')
-    start = time.fromisoformat(times[0])
-    end = time.fromisoformat(times[1])
+    start = datetime.strptime(times[0], '%H:%M').time()
+    end = datetime.strptime(times[1], '%H:%M').time()
 
     return TimeBlock(
         start_time=day + timedelta(hours=start.hour, minutes=start.minute),
