@@ -38,8 +38,8 @@ TimeBlockBase = NamedTuple('TimeBlockBase', [
 class TimeBlock(TimeBlockBase):
     def __str__(self):  # type: (...) -> str
         return (
-            f'{self.start_time} -- {self.end_time} {self.reason_code} '
-            f'{self.description}').strip()
+            '{self.start_time} -- {self.end_time} {self.reason_code} '
+            '{self.description}').format(self=self).strip()
 
     @property
     def duration(self):  # type: (...) -> timedelta

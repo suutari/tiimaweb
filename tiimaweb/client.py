@@ -145,7 +145,7 @@ class Connection:
     def _select_date(self, day):  # type: (date) -> List[TimeBlock]
         dt = self.client.tz.localize(datetime.combine(day, time(0, 0)))
         unix_time = (dt - EPOCH).total_seconds()
-        date_value = f'{int(unix_time * 1000)}'
+        date_value = str(int(unix_time * 1000))
         response = self.post_action('action_select_date', {
             'AjaxId': 'CalendarStrip',
             'SelectedStampingDate': date_value,
@@ -197,10 +197,10 @@ class Connection:
         self.post_action('action_edit_open', {'EditPanelActive': '1'})
         response = self.post_action('action_save', {
             'EditPanelActive': '1',
-            'EditStartTime': f'{start:%H:%M}',
-            'EditStartDate': f'{start:%d.%m.%Y}',
-            'EditEndTime': f'{end:%H:%M}',
-            'EditEndDate': f'{end:%d.%m.%Y}',
+            'EditStartTime': '{:%H:%M}'.format(start),
+            'EditStartDate': '{:%d.%m.%Y}'.format(start),
+            'EditEndTime': '{:%H:%M}'.format(end),
+            'EditEndDate': '{:%d.%m.%Y}'.format(end),
             'EditDescription': description,
             'EditStampType': '0',
             'EditReasonCodeId': reason_code,
@@ -294,7 +294,8 @@ class Connection:
             raise ParseError('Cannot find selected date input element')
         date_input_value = date_input.get('value')
         if not date_input_value or not date_input_value.isdigit():
-            raise ParseError(f'Selected date is invalid: {date_input_value}')
+            raise ParseError(
+                'Selected date is invalid: {}'.format(date_input_value))
         day_timestamp = int(date_input_value) / 1000.0
         day_utc_datetime = (EPOCH + timedelta(seconds=day_timestamp))
         day = day_utc_datetime.astimezone(self.client.tz)
