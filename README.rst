@@ -31,7 +31,7 @@ The library can be used from Python code like this:
 .. code:: python
 
   from datetime import date, datetime
-  
+
   import tiimaweb
 
   client = tiimaweb.Client()

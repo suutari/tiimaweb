@@ -15,6 +15,11 @@ Changed
 
 * Make compatible with Python 2.7
 
+Fixed
+-----
+
+* Fix whitespace error in README
+
 0.1.2 - 2020-03-06
 ==================
 
