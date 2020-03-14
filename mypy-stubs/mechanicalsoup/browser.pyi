@@ -1,9 +1,11 @@
-from typing import Any, Mapping, Optional, Union
+from typing import Any, Mapping, Optional, Text, Union
 
 import bs4.element
 import requests
 
 from .form import Form
+
+_Str = Union[str, Text]
 
 
 class _Response(requests.Response):
@@ -16,38 +18,38 @@ class Browser:
             self,
             # TODO: Replace Any with Session
             session: Optional[Any] = ...,
-            soup_config: Optional[Mapping[str, Any]] = ...,
+            soup_config: Optional[Mapping[_Str, Any]] = ...,
             # TODO: Replace Any with BaseAdapter below
-            requests_adapters: Optional[Mapping[str, Any]] = ...,
+            requests_adapters: Optional[Mapping[_Str, Any]] = ...,
             raise_on_404: bool = ...,
-            user_agent: Optional[str] = ...,
+            user_agent: Optional[_Str] = ...,
     ) -> None: ...
 
     def request(
             self,
-            method: str,
-            url: str,
-            headers: Mapping[str, str] = ...,
+            method: _Str,
+            url: _Str,
+            headers: Mapping[_Str, _Str] = ...,
             # *args, **kwargs,
     ) -> _Response: ...
 
     def get(
             self,
-            url: str,
-            headers: Mapping[str, str] = ...,
+            url: _Str,
+            headers: Mapping[_Str, _Str] = ...,
             # *args, **kwargs,
     ) -> _Response: ...
 
     def post(
             self,
-            url: str,
-            headers: Mapping[str, str] = ...,
+            url: _Str,
+            headers: Mapping[_Str, _Str] = ...,
             # *args, **kwargs,
     ) -> _Response: ...
 
     def submit(
             self,
             form: Union[Form, bs4.element.Tag],
-            url: Optional[str] = ...,
+            url: Optional[_Str] = ...,
             **kwargs: Any,
     ) -> _Response: ...

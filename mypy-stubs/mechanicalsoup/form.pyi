@@ -1,4 +1,8 @@
+from typing import Text, Union
+
 import bs4.element
+
+_Str = Union[str, Text]
 
 
 class Form:
@@ -8,12 +12,12 @@ class Form:
 
     def new_control(
             self,
-            type: str,
-            name: str,
-            value: str,
-            **kwargs: str,
+            type: _Str,
+            name: _Str,
+            value: _Str,
+            **kwargs: _Str,
     ) -> bs4.BeautifulSoup: ...
 
-    def __setitem__(self, name: str, value: str) -> None: ...
+    def __setitem__(self, name: _Str, value: _Str) -> None: ...
 
-    def set(self, name: str, value: str, force: bool = ...) -> None: ...
+    def set(self, name: _Str, value: _Str, force: bool = ...) -> None: ...

@@ -5,13 +5,15 @@ from typing import (
     Mapping,
     Optional,
     Sequence,
+    Text,
     TypeVar,
     Union,
     overload,
 )
 
+_Str = Union[str, Text]
 _T = TypeVar('_T')
-_MatchAgainst = Union[str, bool]  # incomplete (e.g. Callable, Iterable, ...)
+_MatchAgainst = Union[_Str, bool]  # incomplete (e.g. Callable, Iterable, ...)
 
 
 class SoupStrainer:
@@ -32,46 +34,46 @@ class PageElement:
 
 class Tag(PageElement):
     @overload
-    def get(self, key: str) -> Optional[str]: ...
+    def get(self, key: _Str) -> Optional[_Str]: ...
 
     @overload
-    def get(self, key: str, default: _T) -> Union[str, _T]: ...
+    def get(self, key: _Str, default: _T) -> Union[_Str, _T]: ...
 
     def get_text(
             self,
-            separator: str = ...,
+            separator: _Str = ...,
             strip: bool = ...,
             types: Optional[Sequence[type]] = ...
-    ) -> str: ...
+    ) -> _Str: ...
 
     @property
-    def text(self) -> str: ...
+    def text(self) -> _Str: ...
 
     def find(
             self,
-            name: Optional[str] = ...,
-            attrs: Mapping[str, _MatchAgainst] = ...,
+            name: Optional[_Str] = ...,
+            attrs: Mapping[_Str, _MatchAgainst] = ...,
             recursive: bool = ...,
-            text: Optional[str] = ...,
+            text: Optional[_Str] = ...,
             **kwargs: _MatchAgainst,
     ) -> Optional['Tag']: ...
 
     def find_all(
             self,
-            name: str = ...,
-            attrs: Mapping[str, _MatchAgainst] = ...,
+            name: _Str = ...,
+            attrs: Mapping[_Str, _MatchAgainst] = ...,
             recursive: bool = ...,
-            text: Optional[str] = ...,
+            text: Optional[_Str] = ...,
             limit: Optional[int] = ...,
             **kwargs: _MatchAgainst,
     ) -> ResultSet['Tag']: ...
 
     def select_one(
             self,
-            selector: str,
+            selector: _Str,
             # namespaces=None, **kwargs,
     ) -> Optional['Tag']: ...
 
-    def replace_with(self, replace_with: Union[str, 'Tag']) -> 'Tag': ...
+    def replace_with(self, replace_with: Union[_Str, 'Tag']) -> 'Tag': ...
 
     def __iter__(self) -> Iterator['Tag']: ...
