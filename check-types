@@ -1,3 +1,8 @@
 #!/bin/sh
+set -e
 cd "$(dirname "$0")"
-MYPYPATH=./mypy-stubs mypy --strict "${@:-.}"
+export MYPYPATH=./mypy-stubs
+echo "Checking types with Python 3"
+mypy --strict "${@:-.}"
+echo "Checking types with Python 2"
+mypy --py2 --strict "${@:-.}"
