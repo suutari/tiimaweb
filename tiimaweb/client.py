@@ -5,10 +5,10 @@ from datetime import date, datetime, time, timedelta, timezone
 from types import TracebackType
 from typing import Dict, List, Optional, Type
 
-import mechanicalsoup
 import pytz
 from bs4 import BeautifulSoup
 from bs4.element import Tag
+from mechanicalsoup import StatefulBrowser
 from mechanicalsoup.utils import LinkNotFoundError
 
 from .exceptions import Error, LoginFailed, ParseError, UnexpectedResponse
@@ -20,20 +20,19 @@ EPOCH = datetime(1970, 1, 1, 0, 0, tzinfo=timezone.utc)
 class Client:
     def __init__(
             self,
-            *,
-            url: str = 'https://www.tiima.com',
-            tz: str = 'Europe/Helsinki',
-    ) -> None:
+            url='https://www.tiima.com',  # type: str
+            tz='Europe/Helsinki',  # type: str
+    ):  # type: (...) -> None
         self.url = url
         self.tz = pytz.timezone(tz)
 
     def login(
             self,
-            username: str,
-            password: str,
-            customer: str,
-    ) -> 'Connection':
-        browser = mechanicalsoup.StatefulBrowser()
+            username,  # type: str
+            password,  # type: str
+            customer,  # type: str
+    ):  # type: (...) -> Connection
+        browser = StatefulBrowser()
         response = browser.open(self.url)
         response.raise_for_status()
         assert 'login' in (browser.get_url() or '').lower()
@@ -57,13 +56,13 @@ class Client:
 class Connection:
     def __init__(
             self,
-            browser: mechanicalsoup.StatefulBrowser,
-            client: Client,
-    ) -> None:
-        self._browser: Optional[mechanicalsoup.StatefulBrowser] = browser
+            browser,  # type: StatefulBrowser
+            client,  # type: Client
+    ):  # type: (...) -> None
+        self._browser = browser  # type: Optional[StatefulBrowser]
         self.client = client
 
-        self._last_response: Optional[HtmlResponse] = None
+        self._last_response = None  # type: Optional[HtmlResponse]
 
         tiima_form = browser.select_form('[name="tiima"]')
         self._tiima_form = type(tiima_form)(copy(tiima_form.form))
@@ -73,37 +72,43 @@ class Connection:
         if not soup:
             raise UnexpectedResponse('Error: Got Non-HTML front page')
 
-        self._time_blocks: List[TimeBlock]
-        self._current_date: date
+        self._time_blocks = []  # type: List[TimeBlock]
+        self._current_date = date(1970, 1, 1)  # type: date
         self._time_blocks = self._parse_and_store_time_blocks(soup)
 
-    def __enter__(self) -> 'Connection':
+    def __enter__(self):  # type: (...) -> Connection
         return self
 
     def __exit__(
             self,
-            exc_type: Optional[Type[BaseException]],
-            exc_value: Optional[Exception],
-            traceback: Optional[TracebackType],
-    ) -> None:
+            exc_type,  # type: Optional[Type[BaseException]]
+            exc_value,  # type: Optional[Exception]
+            traceback,  # type: Optional[TracebackType]
+    ):  # type: (...) -> None
         self.logout()
 
     @property
-    def browser(self) -> mechanicalsoup.StatefulBrowser:
+    def browser(self):  # type: (...) -> StatefulBrowser
         if not self._browser:
             raise ValueError('Connection already logged out')
         return self._browser
 
-    def logout(self) -> None:
+    def logout(self):  # type: (...) -> None
         if self._browser:
             response = self.browser.follow_link(id='Logout')
             response.raise_for_status()
             self._browser = None
 
-    def get_time_blocks_of_date(self, day: date) -> List[TimeBlock]:
+    def get_time_blocks_of_date(
+            self,
+            day,  # type: date
+    ):  # type: (...) -> List[TimeBlock]
         return self._select_date(day)
 
-    def delete_time_block(self, block: TimeBlock) -> List[TimeBlock]:
+    def delete_time_block(
+            self,
+            block,  # type: TimeBlock
+    ):  # type: (...) -> List[TimeBlock]
         if not any(x.id == block.id for x in self._time_blocks):
             self._select_date(block.start_time.date())
 
@@ -118,10 +123,10 @@ class Connection:
 
     def add_time_block(
             self,
-            start: datetime,
-            end: datetime,
-            description: str = '',
-    ) -> List[TimeBlock]:
+            start,  # type: datetime
+            end,  # type: datetime
+            description='',  # type: str
+    ):  # type: (...) -> List[TimeBlock]
         start = self._ensure_tz(start)
         end = self._ensure_tz(end)
         if start.date() != self._current_date:
@@ -132,12 +137,12 @@ class Connection:
             result = self.delete_time_block(temp_lunch)
         return result
 
-    def _ensure_tz(self, dt: datetime) -> datetime:
+    def _ensure_tz(self, dt):  # type: (datetime) -> datetime
         if not dt.tzinfo:
             return self.client.tz.localize(dt)
         return dt.astimezone(self.client.tz)
 
-    def _select_date(self, day: date) -> List[TimeBlock]:
+    def _select_date(self, day):  # type: (date) -> List[TimeBlock]
         dt = self.client.tz.localize(datetime.combine(day, time(0, 0)))
         unix_time = (dt - EPOCH).total_seconds()
         date_value = f'{int(unix_time * 1000)}'
@@ -151,11 +156,11 @@ class Connection:
 
     def _add_temporary_lunch_if_needed(
             self,
-            new_start: datetime,
-            new_end: datetime,
-            max_block_len: timedelta = timedelta(hours=6),
-            lunch_len: timedelta = timedelta(minutes=30),
-    ) -> Optional[TimeBlock]:
+            new_start,  # type: datetime
+            new_end,  # type: datetime
+            max_block_len=timedelta(hours=6),  # type: timedelta
+            lunch_len=timedelta(minutes=30),  # type: timedelta
+    ):  # type: (...) -> Optional[TimeBlock]
         if new_end - new_start < max_block_len:
             return None
 
@@ -183,11 +188,11 @@ class Connection:
 
     def _add_time_block(
             self,
-            start: datetime,
-            end: datetime,
-            description: str = '',
-            type: str = 'normal',
-    ) -> List[TimeBlock]:
+            start,  # type: datetime
+            end,  # type: datetime
+            description='',  # type: str
+            type='normal',  # type: str
+    ):  # type: (...) -> List[TimeBlock]
         reason_code = {'normal': '1', 'lunch': '13'}[type]
         self.post_action('action_edit_open', {'EditPanelActive': '1'})
         response = self.post_action('action_save', {
@@ -204,16 +209,20 @@ class Connection:
 
     def _parse_blocks_or_select_date(
             self,
-            day: date,
-            soup: BeautifulSoup,
-    ) -> List[TimeBlock]:
+            day,  # type: date
+            soup,  # type: BeautifulSoup
+    ):  # type: (...) -> List[TimeBlock]
         soup_date = self._parse_selected_date(soup)
         if soup_date == day:
             return self._parse_and_store_time_blocks(soup)
         else:
             return self._select_date(day)
 
-    def post_action(self, action: str, params: Dict[str, str]) -> HtmlResponse:
+    def post_action(
+            self,
+            action,  # type: str
+            params,  # type: Dict[str, str]
+    ):  # type: (...) -> HtmlResponse
         """
         Post an AJAX action through the tiima form.
 
@@ -268,14 +277,17 @@ class Connection:
 
     def _parse_and_store_time_blocks(
             self,
-            soup: BeautifulSoup,
-    ) -> List[TimeBlock]:
+            soup,  # type: BeautifulSoup
+    ):  # type: (...) -> List[TimeBlock]
         day = self._parse_selected_date(soup)
         self._current_date = day.date()
         self._time_blocks = result = self._parse_time_blocks(soup, day)
         return result
 
-    def _parse_selected_date(self, soup: BeautifulSoup) -> datetime:
+    def _parse_selected_date(
+            self,
+            soup,  # type: BeautifulSoup
+    ):  # type: (...) -> datetime
         # Parse the selected date
         date_input = soup.find('input', attrs={'name': 'SelectedStampingDate'})
         if not date_input:
@@ -290,15 +302,18 @@ class Connection:
 
     def _parse_time_blocks(
             self,
-            soup: BeautifulSoup,
-            day: datetime,
-    ) -> List[TimeBlock]:
+            soup,  # type: BeautifulSoup
+            day,  # type: datetime
+    ):  # type: (...) -> List[TimeBlock]
         time_block_table = self._find_time_block_table(soup)
         items = self._parse_tds_of_time_block_table(time_block_table)
         result = [_parse_time_block_item(item, day) for item in items]
         return result
 
-    def _find_time_block_table(self, soup: BeautifulSoup) -> Tag:
+    def _find_time_block_table(
+            self,
+            soup,  # type: BeautifulSoup
+    ):  # type: (...) -> Tag
         # Find the time block table
         table_list = soup.find(id='PanelTableList')
         if not table_list:
@@ -313,8 +328,8 @@ class Connection:
 
     def _parse_tds_of_time_block_table(
             self,
-            time_block_table: Tag,
-    ) -> List[Dict[str, Tag]]:
+            time_block_table,  # type: Tag
+    ):  # type: (...) -> List[Dict[str, Tag]]
         # Parse the time block table
         tr_elements = time_block_table.find_all('tr', recursive=False)
         rows = [
@@ -347,8 +362,11 @@ TIME_BLOCK_TABLE_FIELD_NAMES = {
 }
 
 
-def _parse_time_block_item(item: Dict[str, Tag], day: datetime) -> TimeBlock:
-    def get_text(td: Tag) -> str:
+def _parse_time_block_item(
+        item,  # type: Dict[str, Tag]
+        day,  # type: datetime
+):  # type: (...) -> TimeBlock
+    def get_text(td):  # type: (Tag) -> str
         text = td.text.strip() or td.get('title')
         return (text or '').replace('\xa0', '')
 

@@ -1,10 +1,14 @@
 import getpass
+import sys
 from datetime import datetime, timedelta
 
 from .client import Client
 
+if sys.version_info < (3, 0):
+    input = raw_input  # noqa
 
-def main() -> None:
+
+def main():  # type: (...) -> None
     client = Client()
 
     username = input('Username: ')
