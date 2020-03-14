@@ -390,5 +390,5 @@ def _parse_time_block_item(
         end_time=day + timedelta(hours=end.hour, minutes=end.minute),
         reason_code=code,
         reason_text=text,
-        **data,
+        **data
     )
