@@ -378,8 +378,8 @@ def _parse_time_block_item(
     data = {key: get_text(td) for (key, td) in item.items() if key != 'id'}
 
     id_input = item['id'].find(id='SelectedRowStampId')
-    data['id'] = id_input.get('value', '') if id_input else ''
-    if not data['id']:
+    id_value = id_input.get('value', '') if id_input else ''
+    if not id_value:
         raise ParseError('Cannot find id for a time block row')
 
     reason = data.pop('reason')
@@ -390,6 +390,7 @@ def _parse_time_block_item(
     end = datetime.strptime(times[1], '%H:%M').time()
 
     return TimeBlock(
+        id=Text(id_value),
         start_time=day + timedelta(hours=start.hour, minutes=start.minute),
         end_time=day + timedelta(hours=end.hour, minutes=end.minute),
         reason_code=code,
