@@ -2,8 +2,7 @@
 
 from copy import copy
 from datetime import date, datetime, time, timedelta
-from types import TracebackType
-from typing import Dict, List, Optional, Type
+from typing import TYPE_CHECKING, Dict, List, Optional, Type
 
 import pytz
 from bs4 import BeautifulSoup
@@ -13,6 +12,10 @@ from mechanicalsoup.utils import LinkNotFoundError
 
 from .exceptions import Error, LoginFailed, ParseError, UnexpectedResponse
 from .types import HtmlResponse, TimeBlock
+
+if TYPE_CHECKING:
+    from types import TracebackType
+
 
 EPOCH = datetime(1970, 1, 1, 0, 0, tzinfo=pytz.UTC)
 
