@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
+from __future__ import unicode_literals
 
 from copy import copy
 from datetime import date, datetime, time, timedelta
-from typing import TYPE_CHECKING, Dict, List, Optional, Type
+from typing import TYPE_CHECKING, Dict, List, Optional, Text, Type
 
 import pytz
 from bs4 import BeautifulSoup
@@ -23,17 +24,17 @@ EPOCH = datetime(1970, 1, 1, 0, 0, tzinfo=pytz.UTC)
 class Client:
     def __init__(
             self,
-            url='https://www.tiima.com',  # type: str
-            tz='Europe/Helsinki',  # type: str
+            url='https://www.tiima.com',  # type: Text
+            tz=str('Europe/Helsinki'),  # type: str
     ):  # type: (...) -> None
         self.url = url
         self.tz = pytz.timezone(tz)
 
     def login(
             self,
-            username,  # type: str
-            password,  # type: str
-            customer,  # type: str
+            username,  # type: Text
+            password,  # type: Text
+            customer,  # type: Text
     ):  # type: (...) -> Connection
         browser = StatefulBrowser()
         response = browser.open(self.url)
@@ -128,7 +129,7 @@ class Connection:
             self,
             start,  # type: datetime
             end,  # type: datetime
-            description='',  # type: str
+            description='',  # type: Text
     ):  # type: (...) -> List[TimeBlock]
         start = self._ensure_tz(start)
         end = self._ensure_tz(end)
@@ -148,7 +149,7 @@ class Connection:
     def _select_date(self, day):  # type: (date) -> List[TimeBlock]
         dt = self.client.tz.localize(datetime.combine(day, time(0, 0)))
         unix_time = (dt - EPOCH).total_seconds()
-        date_value = str(int(unix_time * 1000))
+        date_value = '{}'.format((int(unix_time * 1000)))
         response = self.post_action('action_select_date', {
             'AjaxId': 'CalendarStrip',
             'SelectedStampingDate': date_value,
@@ -193,8 +194,8 @@ class Connection:
             self,
             start,  # type: datetime
             end,  # type: datetime
-            description='',  # type: str
-            type='normal',  # type: str
+            description='',  # type: Text
+            type='normal',  # type: Text
     ):  # type: (...) -> List[TimeBlock]
         reason_code = {'normal': '1', 'lunch': '13'}[type]
         self.post_action('action_edit_open', {'EditPanelActive': '1'})
@@ -223,8 +224,8 @@ class Connection:
 
     def post_action(
             self,
-            action,  # type: str
-            params,  # type: Dict[str, str]
+            action,  # type: Text
+            params,  # type: Dict[Text, Text]
     ):  # type: (...) -> HtmlResponse
         """
         Post an AJAX action through the tiima form.
@@ -333,7 +334,7 @@ class Connection:
     def _parse_tds_of_time_block_table(
             self,
             time_block_table,  # type: Tag
-    ):  # type: (...) -> List[Dict[str, Tag]]
+    ):  # type: (...) -> List[Dict[Text, Tag]]
         # Parse the time block table
         tr_elements = time_block_table.find_all('tr', recursive=False)
         rows = [
@@ -367,10 +368,10 @@ TIME_BLOCK_TABLE_FIELD_NAMES = {
 
 
 def _parse_time_block_item(
-        item,  # type: Dict[str, Tag]
+        item,  # type: Dict[Text, Tag]
         day,  # type: datetime
 ):  # type: (...) -> TimeBlock
-    def get_text(td):  # type: (Tag) -> str
+    def get_text(td):  # type: (Tag) -> Text
         text = td.text.strip() or td.get('title')
         return (text or '').replace('\xa0', '')
 

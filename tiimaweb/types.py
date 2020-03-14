@@ -1,8 +1,11 @@
+from __future__ import unicode_literals
+
 from datetime import datetime, timedelta
-from typing import NamedTuple
+from typing import NamedTuple, Text
 
 import requests
 from bs4 import BeautifulSoup
+from six import python_2_unicode_compatible
 
 from .exceptions import UnexpectedResponse
 
@@ -25,18 +28,19 @@ class HtmlResponse(HtmlResponseBase):
 
 
 TimeBlockBase = NamedTuple('TimeBlockBase', [
-    ('id', str),
+    ('id', Text),
     ('start_time', datetime),
     ('end_time', datetime),
-    ('reason_code', str),
-    ('reason_text', str),
-    ('status', str),
-    ('description', str),
+    ('reason_code', Text),
+    ('reason_text', Text),
+    ('status', Text),
+    ('description', Text),
 ])
 
 
+@python_2_unicode_compatible
 class TimeBlock(TimeBlockBase):
-    def __str__(self):  # type: (...) -> str
+    def __str__(self):  # type: ignore
         return (
             '{self.start_time} -- {self.end_time} {self.reason_code} '
             '{self.description}').format(self=self).strip()
