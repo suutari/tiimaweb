@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+import re
 from copy import copy
 from datetime import date, datetime, time, timedelta
 from typing import TYPE_CHECKING, Dict, List, Optional, Text, Type
@@ -385,14 +386,42 @@ def _parse_time_block_item(
     reason = data.pop('reason')
     (text, code) = reason.rstrip(')').split('(')
 
-    times = data.pop('time_range').split('-')
-    start = datetime.strptime(times[0], '%H:%M').time()
-    end = datetime.strptime(times[1], '%H:%M').time()
+    times_str = data.pop('time_range')
+    m = re.match((
+        r'(\((?P<start_date>[0-9.]+)\) )?'
+        r'(?P<start>[0-9:]+)-(?P<end>[0-9:]+)'
+        r'( \((?P<end_date>[0-9.]+)\))?'), times_str)
+    if not m:
+        raise ParseError('Cannot parse times: {}'.format(times_str))
+
+    start = datetime.strptime(m.group(str('start')), '%H:%M').time()
+    end = datetime.strptime(m.group(str('end')), '%H:%M').time()
+
+    start_time = day + timedelta(hours=start.hour, minutes=start.minute)
+    end_time = day + timedelta(hours=end.hour, minutes=end.minute)
+
+    if m.group(str('start_date')):
+        sd = datetime.strptime(m.group(str('start_date')), '%d.%m.').date()
+        year_delta = 1 if (sd.month == 12 and start_time.month == 1) else 0
+        start_time = start_time.replace(
+            year=(start_time.year - year_delta),
+            month=sd.month,
+            day=sd.day,
+        )
+
+    if m.group(str('end_date')):
+        ed = datetime.strptime(m.group(str('end_date')), '%d.%m.').date()
+        year_delta = 1 if (ed.month == 1 and end_time.month == 12) else 0
+        end_time = end_time.replace(
+            year=(end_time.year + year_delta),
+            month=ed.month,
+            day=ed.day,
+        )
 
     return TimeBlock(
         id=Text(id_value),
-        start_time=day + timedelta(hours=start.hour, minutes=start.minute),
-        end_time=day + timedelta(hours=end.hour, minutes=end.minute),
+        start_time=start_time,
+        end_time=end_time,
         reason_code=code,
         reason_text=text,
         **data
