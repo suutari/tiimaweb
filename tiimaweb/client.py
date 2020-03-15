@@ -4,7 +4,7 @@ from __future__ import unicode_literals
 import re
 from copy import copy
 from datetime import date, datetime, time, timedelta
-from typing import TYPE_CHECKING, Dict, List, Optional, Text, Type
+from typing import TYPE_CHECKING, Dict, List, Optional, Set, Text, Type
 
 import pytz
 from bs4 import BeautifulSoup
@@ -155,10 +155,12 @@ class Connection:
         end = self._ensure_tz(end)
         if start.date() != self._current_date:
             self._select_date(start.date())
+        old_set = set(self._time_blocks)
         temp_lunch = self._add_temporary_lunch_if_needed(start, end)
         result = self._add_time_block(start, end, description)
         if temp_lunch:
             result = self.delete_time_block(temp_lunch)
+        self._check_timeblock_add(old_set, set(result), start, end)
         return result
 
     def _ensure_tz(self, dt):  # type: (datetime) -> datetime
@@ -236,6 +238,25 @@ class Connection:
             'EditReasonCodeId': reason_code,
         })
         return self._parse_blocks_or_select_date(start.date(), response.soup)
+
+    def _check_timeblock_add(
+            self,
+            old_set,  # type: Set[TimeBlock]
+            new_set,  # type: Set[TimeBlock]
+            new_block_start,  # type: datetime
+            new_block_end,  # type: datetime
+    ):  # type: (...) -> None
+        added_blocks = new_set - old_set
+        removed_blocks = old_set - new_set
+        if len(added_blocks) != 1 or removed_blocks:
+            raise Error(
+                'Time block adding failed: added={}, removed={}'.format(
+                    added_blocks, removed_blocks))
+        tb = list(added_blocks)[0]
+        if tb.start_time != new_block_start or tb.end_time != new_block_end:
+            raise Error(
+                'Time block adding failed: expected={}--{}, got={}'.format(
+                    new_block_start, new_block_end, tb))
 
     def _parse_blocks_or_select_date(
             self,

@@ -4,6 +4,11 @@ TiimaWeb Change Log
 Unreleased
 ==========
 
+Changed
+-------
+
+* Check time block addition failures more carefully
+
 Fixed
 -----
 
