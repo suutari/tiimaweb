@@ -13,7 +13,7 @@ from mechanicalsoup import StatefulBrowser
 from mechanicalsoup.utils import LinkNotFoundError
 
 from .exceptions import Error, LoginFailed, ParseError, UnexpectedResponse
-from .types import HtmlResponse, TimeBlock
+from .types import DaySummary, HtmlResponse, TimeBlock
 
 if TYPE_CHECKING:
     from types import TracebackType
@@ -104,6 +104,25 @@ class Connection:
             response.raise_for_status()
             self._browser = None
 
+    def get_totals_list(
+            self,
+            start_date,  # type: date
+    ):  # type: (...) -> List[DaySummary]
+        """
+        Get list of totals for a bunch of dates.
+
+        Each item in the returned list presents total work time
+        information of a single day as a DaySummary object.  The listing
+        starts from the first day of month of the given start date and
+        containts entries for three months in total.
+        """
+        month_start = start_date.replace(day=1)
+        response = self.post_action('action_previous_month', {
+            'AjaxId': 'CalendarStrip',
+            'CalendarStripStartDate': self._date_to_timestamp(month_start),
+        })
+        return self._parse_calendar_days(response.soup)
+
     def get_time_blocks_of_date(
             self,
             day,  # type: date
@@ -148,16 +167,19 @@ class Connection:
         return dt.astimezone(self.client.tz)
 
     def _select_date(self, day):  # type: (date) -> List[TimeBlock]
-        dt = self.client.tz.localize(datetime.combine(day, time(0, 0)))
-        unix_time = (dt - EPOCH).total_seconds()
-        date_value = '{}'.format((int(unix_time * 1000)))
         response = self.post_action('action_select_date', {
             'AjaxId': 'CalendarStrip',
-            'SelectedStampingDate': date_value,
+            'SelectedStampingDate': self._date_to_timestamp(day),
         })
         result = self._parse_and_store_time_blocks(response.soup)
         assert self._current_date == day
         return result
+
+    def _date_to_timestamp(self, day):  # type: (date) -> Text
+        dt = self._ensure_tz(datetime.combine(day, time(0, 0)))
+        unix_time = (dt - EPOCH).total_seconds()
+        date_value = '{}'.format(int(unix_time * 1000))
+        return date_value
 
     def _add_temporary_lunch_if_needed(
             self,
@@ -280,6 +302,36 @@ class Connection:
         self._last_response = result = HtmlResponse.from_response(response)
         return result
 
+    def _parse_calendar_days(
+            self,
+            soup,  # type: BeautifulSoup
+    ):  # type: (...) -> List[DaySummary]
+        calendar_strip = self._find_inner_table(soup, 'CalendarStrip')
+        tds = calendar_strip.find_all('td', attrs={'onclick': True})
+        return sorted(self._parse_calendar_day(td) for td in tds)
+
+    def _parse_calendar_day(
+            self,
+            td,  # type: Tag
+    ):  # type: (...) -> DaySummary
+        onclick = td.get('onclick') or ''
+        m = re.match(r".*SelectedStampingDate.value='(\d+)'", onclick)
+        if not m:
+            raise ParseError('Cannot parse date from calendar day cell')
+        day = self._parse_timestamp(m.group(1)).date()
+        description = (td.get('title') or '').strip()
+        tds = td.find_all('td')
+        day_text = tds[1].text
+        if not day_text or not day_text.isdigit() or int(day_text) != day.day:
+            raise ParseError('Cannot parse day number of calendar cell')
+        duration_str = (tds[2].text or '').strip()
+        if duration_str:
+            (h_str, m_str) = duration_str.split(':')
+            duration = timedelta(hours=int(h_str), minutes=int(m_str))
+        else:
+            duration = timedelta(0)
+        return DaySummary(day, duration, description)
+
     def _parse_and_store_time_blocks(
             self,
             soup,  # type: BeautifulSoup
@@ -297,40 +349,39 @@ class Connection:
         date_input = soup.find('input', attrs={'name': 'SelectedStampingDate'})
         if not date_input:
             raise ParseError('Cannot find selected date input element')
-        date_input_value = date_input.get('value')
-        if not date_input_value or not date_input_value.isdigit():
-            raise ParseError(
-                'Selected date is invalid: {}'.format(date_input_value))
-        day_timestamp = int(date_input_value) / 1000.0
-        day_utc_datetime = (EPOCH + timedelta(seconds=day_timestamp))
-        day = day_utc_datetime.astimezone(self.client.tz)
-        return day
+        return self._parse_timestamp(date_input.get('value'))
+
+    def _parse_timestamp(self, ts):  # type: (Optional[Text]) -> datetime
+        if not ts or not ts.isdigit():
+            raise ParseError('Cannot parse timestamp: {}'.format(ts))
+        utc_datetime = EPOCH + timedelta(seconds=(int(ts) / 1000.0))
+        return utc_datetime.astimezone(self.client.tz)
 
     def _parse_time_blocks(
             self,
             soup,  # type: BeautifulSoup
             day,  # type: datetime
     ):  # type: (...) -> List[TimeBlock]
-        time_block_table = self._find_time_block_table(soup)
+        time_block_table = self._find_inner_table(soup, 'PanelTableList')
         items = self._parse_tds_of_time_block_table(time_block_table)
         result = [_parse_time_block_item(item, day) for item in items]
         return result
 
-    def _find_time_block_table(
+    def _find_inner_table(
             self,
             soup,  # type: BeautifulSoup
+            id,  # type: Text
     ):  # type: (...) -> Tag
-        # Find the time block table
-        table_list = soup.find(id='PanelTableList')
-        if not table_list:
-            raise ParseError('Cannot find element with id "PanelTableList"')
-        inner_table = table_list.find('table')
+        element = soup.find(id=id)
+        if not element:
+            raise ParseError('Cannot find element with id {!r}'.format(id))
+        table = element.find('table')
+        if not table:
+            raise ParseError('Cannot find table in {}'.format(id))
+        inner_table = table.find('table')
         if not inner_table:
-            raise ParseError('Cannot find table in PanelTableList')
-        time_block_table = inner_table.find('table')
-        if not time_block_table:
-            raise ParseError('Cannot find time block table')
-        return time_block_table
+            raise ParseError('Cannot find inner table within {}'.format(id))
+        return inner_table
 
     def _parse_tds_of_time_block_table(
             self,

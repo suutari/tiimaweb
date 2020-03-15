@@ -1,6 +1,15 @@
 TiimaWeb Change Log
 ###################
 
+Unreleased
+==========
+
+Added
+-----
+
+* Add get_totals_list method for reading the work time calendar
+
+
 0.2.0 - 2020-03-14
 ==================
 

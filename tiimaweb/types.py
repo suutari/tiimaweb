@@ -1,6 +1,6 @@
 from __future__ import unicode_literals
 
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from typing import NamedTuple, Text
 
 import requests
@@ -48,3 +48,18 @@ class TimeBlock(TimeBlockBase):
     @property
     def duration(self):  # type: (...) -> timedelta
         return self.end_time - self.start_time
+
+
+DaySummaryBase = NamedTuple('DaySummaryBase', [
+    ('day', date),
+    ('duration', timedelta),
+    ('description', Text),
+])
+
+
+@python_2_unicode_compatible
+class DaySummary(DaySummaryBase):
+    def __str__(self):  # type: ignore
+        return (
+            '{self.day} {self.duration} '
+            '{self.description}').format(self=self).strip()
