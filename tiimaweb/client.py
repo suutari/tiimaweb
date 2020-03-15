@@ -185,10 +185,13 @@ class Connection:
             self,
             new_start,  # type: datetime
             new_end,  # type: datetime
-            max_block_len=timedelta(hours=6),  # type: timedelta
+            max_lunchless_day_len=timedelta(hours=6),  # type: timedelta
             lunch_len=timedelta(minutes=30),  # type: timedelta
     ):  # type: (...) -> Optional[TimeBlock]
-        if new_end - new_start < max_block_len:
+        prev_total = (
+            sum((x.duration for x in self._time_blocks), timedelta(0)))
+        new_total = prev_total + (new_end - new_start)
+        if new_total < max_lunchless_day_len:
             return None
 
         starts = [x.start_time for x in self._time_blocks] + [new_start]

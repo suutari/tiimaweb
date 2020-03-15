@@ -1,6 +1,15 @@
 TiimaWeb Change Log
 ###################
 
+Unreleased
+==========
+
+Fixed
+-----
+
+* Fix automatic lunch prevention logic
+
+
 0.3.0 - 2020-03-15
 ==================
 
