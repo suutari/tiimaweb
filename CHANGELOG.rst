@@ -29,6 +29,7 @@ Fixed
 
 * Fix whitespace error in README
 
+
 0.1.2 - 2020-03-06
 ==================
 
@@ -36,6 +37,7 @@ Changed
 -------
 
 * Enable syntax highlighting for the Python example in README
+
 
 0.1.1 - 2020-03-06
 ==================
@@ -51,6 +53,7 @@ Changed
 -------
 
 * Do not require too so version of pytz
+
 
 0.1.0 - 2020-03-06
 ==================
