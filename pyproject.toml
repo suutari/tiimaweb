@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "tiimaweb"
-version = "0.2.0"
+version = "0.3.0"
 description = "Tiima Web Controller"
 readme = "README.rst"
 authors = ["Tuomas Suutari <tuomas@nepnep.net>"]
