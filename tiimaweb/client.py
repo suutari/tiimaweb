@@ -459,7 +459,7 @@ def _parse_time_block_item(
         raise ParseError('Cannot find id for a time block row')
 
     reason = data.pop('reason')
-    (text, code) = reason.rstrip(')').split('(')
+    (text, code) = reason.rstrip(')').rsplit('(', 1)
 
     times_str = data.pop('time_range')
     m = re.match((

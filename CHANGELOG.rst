@@ -1,6 +1,12 @@
 TiimaWeb Change Log
 ###################
 
+Unreleased
+==========
+
+* Fix reason code parsing
+
+
 0.3.1 - 2020-03-15
 ==================
 
