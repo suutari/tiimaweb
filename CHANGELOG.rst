@@ -1,6 +1,9 @@
 TiimaWeb Change Log
 ###################
 
+0.4.0 - 2021-12-14
+==================
+
 * Add support for new Tiima UI
 * Drop support for the old Tiima UI
 
