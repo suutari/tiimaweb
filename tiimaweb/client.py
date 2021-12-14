@@ -330,7 +330,12 @@ class Connection:
             self,
             soup,  # type: BeautifulSoup
     ):  # type: (...) -> List[DaySummary]
-        calendar_strip = self._find_inner_table(soup, 'CalendarStrip')
+        container = soup.find(id='CalendarStrip')
+        if not container:
+            raise ParseError('Cannot find CalendarStrip container')
+        calendar_strip = container.find('table')
+        if not calendar_strip:
+            raise ParseError('Cannot find CalendarStrip table')
         tds = calendar_strip.find_all('td', attrs={'onclick': True})
         return sorted(self._parse_calendar_day(td) for td in tds)
 
@@ -338,17 +343,23 @@ class Connection:
             self,
             td,  # type: Tag
     ):  # type: (...) -> DaySummary
+        def get_text(selector):
+            # type: (Text) -> Text
+            elem = td.select_one(selector)
+            return (elem.text or '').strip() if elem else ''
+
         onclick = td.get('onclick') or ''
         m = re.match(r".*SelectedStampingDate.value='(\d+)'", onclick)
         if not m:
             raise ParseError('Cannot parse date from calendar day cell')
         day = self._parse_timestamp(m.group(1)).date()
-        description = (td.get('title') or '').strip()
-        tds = td.find_all('td')
-        day_text = tds[1].text
+        description = get_text('.calendar_date_reasoncode_indicator')
+        day_text = (
+            get_text('.calendar_day_of_month') or
+            get_text('.calendar_current_day_of_month'))
         if not day_text or not day_text.isdigit() or int(day_text) != day.day:
             raise ParseError('Cannot parse day number of calendar cell')
-        duration_str = (tds[2].text or '').strip()
+        duration_str = get_text('.calendar_date_hours')
         if duration_str:
             (h_str, m_str) = duration_str.split(':')
             duration = timedelta(hours=int(h_str), minutes=int(m_str))
@@ -386,7 +397,12 @@ class Connection:
             soup,  # type: BeautifulSoup
             day,  # type: datetime
     ):  # type: (...) -> List[TimeBlock]
-        time_block_table = self._find_inner_table(soup, 'PanelTableList')
+        container = soup.select_one('.stamping_realized_stamp_scroll_box')
+        if not container:
+            raise ParseError('Cannot find time block table container')
+        time_block_table = container.find('table')
+        if not time_block_table:
+            raise ParseError('Cannot find time block table')
         items = self._parse_tds_of_time_block_table(time_block_table)
         result = [_parse_time_block_item(item, day) for item in items]
         return result
@@ -413,13 +429,17 @@ class Connection:
     ):  # type: (...) -> List[Dict[Text, Tag]]
         # Parse the time block table
         tr_elements = time_block_table.find_all('tr', recursive=False)
-        rows = [
+        if not tr_elements:
+            raise ParseError('No header in time block table')
+        header_tr = tr_elements[0]
+        header_row = [th for th in header_tr.find_all('th', recursive=False)]
+        other_rows = [
             [td for td in tr.find_all('td', recursive=False)]
-            for tr in tr_elements
+            for tr in tr_elements[1:]
         ]
-        field_texts = (td.text.strip() for td in rows[0])
+        field_texts = (x.text.strip() for x in header_row)
         header = [TIME_BLOCK_TABLE_FIELD_NAMES[x] for x in field_texts]
-        items = [dict(zip(header, row)) for row in rows[1:]]
+        items = [dict(zip(header, row)) for row in other_rows]
         return items
 
 
