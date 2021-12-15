@@ -407,22 +407,6 @@ class Connection:
         result = [_parse_time_block_item(item, day) for item in items]
         return result
 
-    def _find_inner_table(
-            self,
-            soup,  # type: BeautifulSoup
-            id,  # type: Text
-    ):  # type: (...) -> Tag
-        element = soup.find(id=id)
-        if not element:
-            raise ParseError('Cannot find element with id {!r}'.format(id))
-        table = element.find('table')
-        if not table:
-            raise ParseError('Cannot find table in {}'.format(id))
-        inner_table = table.find('table')
-        if not inner_table:
-            raise ParseError('Cannot find inner table within {}'.format(id))
-        return inner_table
-
     def _parse_tds_of_time_block_table(
             self,
             time_block_table,  # type: Tag
